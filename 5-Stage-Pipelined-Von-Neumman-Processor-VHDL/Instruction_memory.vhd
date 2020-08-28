@@ -1,0 +1,38 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use IEEE.math_real.all;
+Entity Instruction_MemoryProccesor is
+	port(
+		clk           : in  std_logic;
+		we            : in  std_logic;
+		PC_value      : in  std_logic_vector(19 downto 0);   -- 20 bits msh 10
+		datain        : in  std_logic_vector(15 downto 0);
+		Instru_out    : out std_logic_vector(15 downto 0);
+		Imm_EfffValue : out std_logic_vector(19 downto 0)   -- 20 bits 3ashan el EA 
+
+	);
+end entity Instruction_MemoryProccesor;
+
+architecture ArchInstruction_MemoryProccesor of Instruction_MemoryProccesor is
+	type ram_type is array (0 to 1048575) of std_logic_vector(15 downto 0);    -- 1023 hatb2a 2^20
+	signal ram       : ram_type;
+	signal rPC_value : STD_LOGIC_VECTOR(19 downto 0) := (others => '0');
+begin
+	rPC_value     <= (others => '0') when Is_X(PC_value) else PC_value;       -- get address of instruction 
+	process(clk) is
+	begin
+		if rising_edge(clk) then
+			if we = '1' then
+				ram(to_integer(unsigned(rPC_value))) <= datain;
+			end if;
+		end if;
+	end process;
+	Instru_out    <= ram(to_integer(unsigned(rPC_value)));
+	--Imm_EfffValue <= ram(to_integer(unsigned(rPC_value) + 1));    -- bn7ot feha el next memory location 3ashan law 3andena Instruction feha Imm value
+                                                                     -- yb2a Total_Instruction = Instru_out & Imm_EfffValue 
+                                                                     -- w fe case el EA = Total_Instruction(19 downto 0)
+                                                                     -- w Instr = Total_Instruction (31 downto 20)
+      
+       Imm_EfffValue <= ram(to_integer(unsigned(rPC_value)))(3 downto 0) & ram(to_integer(unsigned(rPC_value) + 1));
+end ArchInstruction_MemoryProccesor;

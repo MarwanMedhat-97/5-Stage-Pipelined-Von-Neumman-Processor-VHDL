@@ -1,0 +1,39 @@
+Library ieee;
+Use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+Entity StackRegister is
+	port(
+		StackSignal : in  STD_LOGIC;
+		Signal_push : in  std_logic;
+		Signal_pop  : in  STD_LOGIC;
+		Clk, Rst    : in  std_logic;
+		X_Address   : out std_logic_vector(19 downto 0));
+end StackRegister;
+
+Architecture Arch_StackRegister of StackRegister is
+	signal SP_Added, SP_sub, ToMemoryAddress : std_logic_vector(19 downto 0);
+	signal SP_input, SP_output               : std_logic_vector(19 downto 0) := "0000" & (others =>'1'); -- Set Initial Value of SP
+	signal outor                             : std_logic;
+	COMPONENT my_nDFF is
+		Generic(n : integer := 16);
+		port(
+			Clk, Rst, enable : in  std_logic;
+			d                : in  std_logic_vector(n - 1 downto 0);
+			q                : out std_logic_vector(n - 1 downto 0));
+	end COMPONENT;
+begin
+	SP_Added        <= std_logic_vector(unsigned(SP_output) + 1); 
+	SP_sub          <= std_logic_vector(unsigned(SP_output) - 1);
+	ToMemoryAddress <= SP_output when Signal_push = '1'
+	else   SP_Added when Signal_pop = '1' ;                      				
+		
+	                                  				 -- when i push i subtract the SP_Input and put it into the SP_out	
+	X_Address       <= ToMemoryAddress;                              -- then Put SP_out into MemoryAddress and then into X_address
+
+	SP_input        <= SP_sub when Signal_push = '1'	-- when i pop i add the SP_input and put it into the Sp_out
+	else            SP_Added when Signal_pop = '1'             -- then put the SP_out into MemoryAddress and then into X_address    
+	else            SP_input;                
+	
+	X0 : my_nDFF generic map(n => 20) port map(Clk, Rst, '1', SP_input, SP_output);
+end Arch_StackRegister;

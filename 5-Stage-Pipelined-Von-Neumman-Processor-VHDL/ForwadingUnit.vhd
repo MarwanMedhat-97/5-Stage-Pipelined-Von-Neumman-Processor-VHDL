@@ -1,0 +1,34 @@
+Library ieee;
+Use ieee.std_logic_1164.all;
+Entity Forwading_Unit is
+	port(
+		ID_EX_RS             : in  std_logic_vector(2 downto 0); -- Rsrc_address_c3
+		ID_EX_RD             : in  std_logic_vector(2 downto 0); -- Rdst_address_c3
+		EX_MEM_RD            : in  std_logic_vector(2 downto 0); -- Rdst_address_c4
+		MEM_WB_RD            : in  std_logic_vector(2 downto 0); -- Rdst_address_c5
+		EX_MEM_WriteRegister : in  STD_LOGIC; -- WriteRegSignal_c4
+		MEM_WB_WriteRegister : in  STD_LOGIC; -- WriteRegSignal_c5
+		ForwardA, ForwardB   : out STD_LOGIC_VECTOR(1 downto 0) -- Forward A for Rsrc Forward B for Rdest
+	);
+end Forwading_Unit;
+
+Architecture Arch_Forwading_Unit of Forwading_Unit is
+	-- we have to implement compartor as we cant compare 2 signals with = operator 
+	signal result_RS_RD_EX : STD_LOGIC_VECTOR(2 downto 0);      -- result Rsrc from DE to EX
+	signal result_RS_RD_MW : STD_LOGIC_VECTOR(2 downto 0);
+	signal result_RD_RD_EX : STD_LOGIC_VECTOR(2 downto 0);
+	signal result_RD_RD_MW : STD_LOGIC_VECTOR(2 downto 0);
+begin
+	result_RS_RD_EX <= ID_EX_RS XNOR EX_MEM_RD;    -- if Rsrc in c3 = Rdst in c4 ( there is data hazard , we need to forward from c4 to c3)
+	result_RS_RD_MW <= ID_EX_RS XNOR MEM_WB_RD;    -- if Rsrc in c3 = Rdst in c5 ( there is data hazard , we need to forward from c5 to c3)
+	result_RD_RD_EX <= ID_EX_RD XNOR EX_MEM_RD;    -- if Rdst in c3 = Rdst in c4 ( there is data hazard in some instructions like: and ,or,add,sub, we need to forward )
+	result_RD_RD_MW <= ID_EX_RD XNOR MEM_WB_RD;    -- if Rdst in c3 = Rdst in c5 ( there is data hazard in some instructions like: and ,or,add,sub, we need to forward )
+	ForwardA        <=
+	         "01" when ((result_RS_RD_EX = "111") AND EX_MEM_WriteRegister = '1')  --Ex to Ex forwarding for Rsrc
+		else "10" when ((result_RS_RD_MW = "111") AND MEM_WB_WriteRegister = '1') -- Mem to Ex forwarding for Rsrc
+		else "00";
+	ForwardB 		<=
+	         "01" when ((result_RD_RD_EX = "111") AND EX_MEM_WriteRegister = '1') --Ex to Ex forwarding for Rdst
+		else "10" when ((result_RD_RD_MW = "111") AND MEM_WB_WriteRegister = '1') -- Mem to Ex forwarding for Rdst
+		else "00";
+end Arch_Forwading_Unit;

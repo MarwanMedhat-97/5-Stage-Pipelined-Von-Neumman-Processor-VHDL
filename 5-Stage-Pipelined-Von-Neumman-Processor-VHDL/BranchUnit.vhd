@@ -1,0 +1,21 @@
+Library ieee;
+use ieee.std_logic_1164.all;
+
+entity BranchUnit is
+	port(
+		Zero_flag, Negative_flag, Carry_flag, JZ, JN, JC, JMP : in  std_logic;
+		Sig_jmp                                               : out std_logic
+		
+	);
+end entity;
+
+Architecture Arch_Branch_Unit of BranchUnit is
+	signal ZJmp, NJmp, CJmp : std_logic;
+begin
+	ZJmp                 <= Zero_flag and Jz;
+	NJmp                 <= Negative_flag and JN;
+	CJmp                 <= Carry_flag and JC;
+	Sig_jmp              <= '1' when (ZJmp or NJmp or CJmp or Jmp) = '1' else '0';
+	
+
+end Arch_Branch_Unit;

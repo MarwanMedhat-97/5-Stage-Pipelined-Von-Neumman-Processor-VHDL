@@ -1,0 +1,32 @@
+Library ieee;
+Use ieee.std_logic_1164.all;
+
+Entity Hazard_Detection is
+	port(
+		IF_ID_RS      : IN  std_logic_vector(2 downto 0); --Rsrc_address_c2 (Instr 10 downto 8)
+		IF_ID_RD      : IN  std_logic_vector(2 downto 0); --Rdst_address_c2 (Instr 7 downto 5) 
+		ID_EX_RD      : IN  std_logic_vector(2 downto 0); --Rdst_address_c3
+		ID_EX_WB      : IN  STD_LOGIC_VECTOR(1 downto 0); -- WB_signal when ( LDD or POP ) 
+		ALU_Operation : IN  STD_LOGIC;
+                Mem_write_c4 , Mem_read_c4 : IN STD_LOGIC;
+		Load_Use_Case : OUT STD_LOGIC   -- Happpens when data is ready after memory stage (POP LDD). So we need to stall 1 cycle 
+	);
+end Hazard_Detection;
+
+Architecture Arch_Hazard_Detection of Hazard_Detection is
+	-- we have to implement compartor as we cant compare 2 signals with = operator 
+	signal result_RS_RD : STD_LOGIC_VECTOR(2 downto 0);
+	signal result_RD_RD : STD_LOGIC_VECTOR(2 downto 0);
+begin
+
+
+      -- Load_Use_Case <= '1' when (Mem_write_c4='1' or Mem_read_c4='1');  -- because we have one memory
+
+
+	result_RS_RD <= IF_ID_RS XNOR ID_EX_RD;  -- if Rsrc_address_c2 = Rdst_address_c3 ( Rdst of previous instruction)
+	result_RD_RD <= IF_ID_RD XNOR ID_EX_RD;  -- if Rdst_address_c2 = Rdst_address_c3 ( Rdst of previous instruction)
+
+	Load_Use_Case <= '1' when ((result_RS_RD = "111") AND ID_EX_WB = "10" AND ALU_Operation = '1')
+		else '1' when ((result_RD_RD = "111") AND ID_EX_WB = "10" AND ALU_Operation = '1')
+		else '0';
+end Arch_Hazard_Detection;
